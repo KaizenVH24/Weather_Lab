@@ -20,7 +20,7 @@ class WeatherService:
     def get_weather(self, city: str) -> WeatherReport:
         location = self.geocoding_client.search(city)
 
-        current, daily = self.weather_client.get_forecast(
+        current, hourly, daily = self.weather_client.get_forecast(
             latitude=location.latitude,
             longitude=location.longitude,
             timezone=location.timezone,
@@ -29,5 +29,6 @@ class WeatherService:
         return WeatherReport(
             location=location,
             current=current,
+            hourly=hourly,
             daily=daily,
         )

@@ -1,6 +1,8 @@
-from datetime import datetime
+from datetime import date, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from .location import Location
 
 
 class CurrentWeather(BaseModel):
@@ -13,8 +15,16 @@ class CurrentWeather(BaseModel):
     weather_code: int | None = None
 
 
+class HourlyForecast(BaseModel):
+    time: datetime
+    temperature: float
+    precipitation_probability: float | None = None
+    precipitation: float | None = None
+    weather_code: int | None = None
+
+
 class DailyForecast(BaseModel):
-    date: datetime
+    date: date
     temperature_max: float
     temperature_min: float
     precipitation_probability: float | None = None
@@ -22,9 +32,7 @@ class DailyForecast(BaseModel):
 
 
 class WeatherReport(BaseModel):
-    location: "Location"
+    location: Location
     current: CurrentWeather
-    daily: list[DailyForecast] = []
-
-
-from .location import Location
+    hourly: list[HourlyForecast] = Field(default_factory=list)
+    daily: list[DailyForecast] = Field(default_factory=list)

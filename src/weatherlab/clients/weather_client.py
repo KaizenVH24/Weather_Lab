@@ -2,7 +2,11 @@ from datetime import datetime
 
 import requests
 
-from weatherlab.models.weather import CurrentWeather, DailyForecast
+from weatherlab.models.weather import (
+    CurrentWeather,
+    DailyForecast,
+    HourlyForecast,
+)
 
 
 class WeatherClient:
@@ -13,7 +17,11 @@ class WeatherClient:
         latitude: float,
         longitude: float,
         timezone: str = "auto",
-    ) -> tuple[CurrentWeather, list[DailyForecast]]:
+    ) -> tuple[
+        CurrentWeather,
+        list[HourlyForecast],
+        list[DailyForecast],
+    ]:
 
         params = {
             "latitude": latitude,
@@ -24,6 +32,12 @@ class WeatherClient:
                 "precipitation,"
                 "weather_code,"
                 "wind_speed_10m"
+            ),
+            "hourly": (
+                "temperature_2m,"
+                "precipitation_probability,"
+                "precipitation,"
+                "weather_code"
             ),
             "daily": (
                 "weather_code,"
@@ -45,6 +59,10 @@ class WeatherClient:
 
         data = response.json()
 
+        # -------------------------
+        # Current weather
+        # -------------------------
+
         current = data["current"]
         current_units = data["current_units"]
 
@@ -58,14 +76,39 @@ class WeatherClient:
             weather_code=current.get("weather_code"),
         )
 
+        # -------------------------
+        # Hourly forecast
+        # -------------------------
+
+        hourly = data["hourly"]
+
+        hourly_forecasts = []
+
+        for index, time in enumerate(hourly["time"]):
+            hourly_forecasts.append(
+                HourlyForecast(
+                    time=datetime.fromisoformat(time),
+                    temperature=hourly["temperature_2m"][index],
+                    precipitation_probability=(
+                        hourly["precipitation_probability"][index]
+                    ),
+                    precipitation=hourly["precipitation"][index],
+                    weather_code=hourly["weather_code"][index],
+                )
+            )
+
+        # -------------------------
+        # Daily forecast
+        # -------------------------
+
         daily = data["daily"]
 
-        forecasts = []
+        daily_forecasts = []
 
-        for index, date in enumerate(daily["time"]):
-            forecasts.append(
+        for index, forecast_date in enumerate(daily["time"]):
+            daily_forecasts.append(
                 DailyForecast(
-                    date=datetime.fromisoformat(date),
+                    date=forecast_date,
                     temperature_max=daily["temperature_2m_max"][index],
                     temperature_min=daily["temperature_2m_min"][index],
                     precipitation_probability=(
@@ -75,4 +118,8 @@ class WeatherClient:
                 )
             )
 
-        return current_weather, forecasts
+        return (
+            current_weather,
+            hourly_forecasts,
+            daily_forecasts,
+        )
